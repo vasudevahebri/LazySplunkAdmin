@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disclaimer & Usage Agreement</title>
+<style>
+:root{--bg:#0b1020;--panel:#121a31;--text:#edf2ff;--muted:#aeb8d7;--accent:#f97316;--shadow:0 18px 44px rgba(0,0,0,.28)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Arial,sans-serif;color:var(--text);background:linear-gradient(180deg,#0b1020 0%,#0f1730 100%);display:flex;align-items:center;justify-content:center;padding:24px}
+.box{width:min(980px,100%);max-height:92vh;overflow:auto;padding:30px;background:linear-gradient(180deg,rgba(22,32,61,.98),rgba(18,26,49,.98));border:1px solid rgba(255,255,255,.08);border-radius:20px;box-shadow:var(--shadow)}
+h1{margin:0 0 10px;font-size:32px;line-height:1.15}
+p{margin:0 0 12px;color:var(--muted);line-height:1.6}
+ul{margin:14px 0 0;padding-left:22px;line-height:1.7}
+li{margin:0 0 8px}
+.note{margin-top:16px;padding:14px 16px;border-radius:16px;border:1px solid rgba(245,158,11,.28);background:rgba(245,158,11,.10);color:#fde68a}
+.section{margin-top:16px;padding:16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.section h2{margin:0 0 8px;font-size:18px}
+.section p{margin:0;color:#dbeafe}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+button,a.btn{appearance:none;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:12px;font-weight:800;font-size:14px}
+.primary{background:linear-gradient(180deg,#f97316,#ea580c);color:#fff}
+.ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.08)}
+.fine{margin-top:14px;font-size:12px;color:#94a3b8;line-height:1.55}
+strong{color:#fff}
+@media (max-width:760px){h1{font-size:26px}.box{padding:20px}}
+</style>
+</head>
+<body>
+<main class="box" aria-label="Disclaimer gate">
+  <h1>Disclaimer & Usage Agreement</h1>
+  <p>This site is provided strictly for <strong>educational, reference, and demo purposes only</strong>.</p>
+  <p><strong>Initial data, sample records, and example configurations are demo content only.</strong> You can download the sample files and modify them according to your own requirements, policies, and validation process.</p>
+
+  <div class="section">
+    <h2>Risk and responsibility conditions</h2>
+    <ul>
+      <li>No responsibility is accepted for any damage, data loss, downtime, outage, misconfiguration, security incident, compliance failure, or business impact caused by use of this site.</li>
+      <li>You use this site entirely at your own risk and assume full responsibility for every action taken based on its content.</li>
+      <li>You must be a qualified, trained, or certified administrator/engineer before using this tool in any real environment.</li>
+      <li>You must independently validate every command, configuration, path, value, dependency, and recommendation before execution.</li>
+      <li>You must verify all outputs against your own environment, versions, topology, policies, and change-control requirements.</li>
+      <li>You must test all changes in a non-production environment before applying anything to production.</li>
+      <li>You must have proper authorization, approval, and access before using this site or any downloaded files.</li>
+      <li>No warranty is provided for correctness, completeness, compatibility, availability, or production safety.</li>
+      <li>No support, maintenance, incident response, or liability is provided by the creator or publisher of this site.</li>
+      <li>Environment differences may cause outputs to fail, behave differently, or require manual correction.</li>
+      <li>Generated content may be outdated, incomplete, inaccurate, or unsuitable for your system.</li>
+      <li>You are responsible for securing credentials, infrastructure, data, and access controls.</li>
+      <li>You are responsible for backups, rollback planning, validation, and recovery.</li>
+      <li>Any use outside your policies, laws, or procedures is solely your responsibility.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Maximum risk removal intent</h2>
+    <p>This disclaimer is intended to reduce risk by making clear that the site is only a starting point. It does not eliminate risk, does not replace professional judgment, and does not replace your organization’s validation process.</p>
+  </div>
+
+  <div class="note">
+    By clicking <strong>Accept & Continue</strong>, you confirm that you have read, understood, and accepted all conditions above.
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="acceptBtn" type="button">Accept & Continue</button>
+    <a class="btn ghost" href="https://www.google.com" rel="noopener">Leave Site</a>
+  </div>
+
+  <div class="fine">
+    Acceptance is stored locally in your browser only. Clearing browser data will show this page again.
+  </div>
+</main>
+
+<script>
+const KEY = "splunkPsOpsStudio.disclaimerAccepted.v1";
+const accept = () => {
+  try { localStorage.setItem(KEY, "true"); } catch (e) {}
+  window.location.replace("index.html");
+};
+document.getElementById("acceptBtn").addEventListener("click", accept);
+try {
+  if (localStorage.getItem(KEY) === "true") window.location.replace("index.html");
+} catch (e) {}
+</script>
+</body>
+</html>

@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Splunk PS Ops Studio - User Guide</title>
+  <link rel="stylesheet" href="support.css" />
+  <script defer src="support.js"></script>
+</head>
+<body data-page="guide">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="kicker">Guide</div>
+        <h1>Splunk PS Ops Studio - User Guide</h1>
+        <p>Stable guide page with live project context layered on top. When opened from index.html, it reads the active imported environment from Import, export, and presets without replacing the original guide content.</p>
+        <div class="badges"><span class="badge accent">Environment</span><span class="badge good">Components</span><span class="badge accent">Data sources</span><span class="badge warn">Placement</span><span class="badge good">Live state</span></div>
+      </div>
+      <div class="nav">
+        <a class="nav-button" href="index.html#support">Studio</a>
+        <a class="nav-button" href="help_user_guide.html">User Guide</a>
+        <a class="nav-button" href="engineer_sop.html">Engineer SOP</a>
+        <a class="nav-button" href="ps_cli_reference.html">PS CLI</a>
+      </div>
+    </div>
+    <div class="hero">
+      <div id="stateStatus"></div>
+      <div id="summaryGrid" class="metrics-grid"></div>
+      <div class="callout">This page keeps the original static guide and adds a <strong>live environment snapshot</strong> whenever the active project state is available from <strong>index.html</strong>. If no live state is present yet, the static guide still remains usable.</div>
+    </div>
+    <div id="liveContext"></div>
+    <div class="card content">
+      <h2>Support page map</h2>
+<ul>
+<li><strong>User Guide</strong>: explains every major section of the studio.</li>
+<li><strong>Engineer SOP</strong>: the operating flow for pre-checks, staging, rollout, post-change validation, rollback, and handover.</li>
+<li><strong>PS CLI</strong>: the command reference for deployment-apps, manager-apps, shcluster/apps, local apps, btool checks, and rollback.</li>
+</ul>
+<blockquote>
+<p>Recommended working pattern: fill the topology in the studio, review placement, generate the conf file, run the PS Config CLI sequence, then finish with Validation and Troubleshooting.</p>
+</blockquote>
+<h1>Splunk Enterprise Deployment &amp; Daily Ops Studio</h1>
+<h2>User Guide — PS Config Factory Edition</h2>
+<p><strong>Aligned to file:</strong> <code>Splunk_Enterprise_Daily_Ops_Studio_PS_Config_Factory.html</code><br />
+<strong>Updated:</strong> 2026-04-13</p>
+<h2>1. Purpose</h2>
+<p>This guide explains how to use the updated <strong>Splunk Enterprise Deployment &amp; Daily Ops Studio</strong> application as a Professional Services style engineering workbook.</p>
+<p>The app is designed to help Splunk engineers do four things in one place:</p>
+<ol>
+<li>capture customer requirements and component inventory,</li>
+<li>build and validate a real Splunk topology,</li>
+<li>decide where each app, TA, and configuration should live,</li>
+<li>generate PS-style config outputs and placement guidance for delivery teams.</li>
+</ol>
+<p>The updated version adds a stronger <strong>PS Config Factory</strong> workflow so the tool can convert generic <code>org_*</code> naming into customer-specific folder names, produce engineer-readable conf snippets, and tell the engineer exactly where each app or file should be staged.</p>
+<hr />
+<h2>2. What changed in this version</h2>
+<p>The updated app now includes the following PS-oriented improvements:</p>
+<ul>
+<li>A new <strong>Customer short name</strong> field in <strong>Customer profile and platform settings</strong>.</li>
+<li>Automatic replacement of generic <code>org_</code> prefixes with customer-specific folder names.</li>
+<li>A dedicated <strong>PS config factory and placement map</strong> section.</li>
+<li>A generated <strong>bundle manifest</strong> that maps original folders to customer-prefixed PS folder names.</li>
+<li>A generated <strong>conf pack</strong> for common deployment, forwarding, licensing, cluster, and security baselines.</li>
+<li>Placement guidance that separates:<ul>
+<li>deployment-server apps,</li>
+<li>cluster manager peer bundles,</li>
+<li>search head cluster deployer apps,</li>
+<li>manager-local apps,</li>
+<li>peer-local overlays.</li>
+</ul>
+</li>
+<li>A more explicit PS workflow that connects:<ul>
+<li>profile inputs,</li>
+<li>component inventory,</li>
+<li>data source onboarding,</li>
+<li>app and TA placement,</li>
+<li>playbook execution,</li>
+<li>validation and troubleshooting.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2>3. Recommended engineer workflow</h2>
+<p>Use the app in this sequence.</p>
+<h3>Step 1 — Start with the customer profile</h3>
+<p>Complete the <strong>Customer profile and platform settings</strong> section first.</p>
+<p>At minimum, populate these fields:</p>
+<ul>
+<li>Deployment name</li>
+<li>Customer name</li>
+<li><strong>Customer short name</strong></li>
+<li>Environment</li>
+<li>Splunk version</li>
+<li>Topology pattern</li>
+<li>Platform</li>
+<li>Enterprise home</li>
+<li>Forwarder home</li>
+<li>Receiver port</li>
+<li>Deployment poll interval</li>
+<li>TLS and clustering settings</li>
+</ul>
+<h3>Step 2 — Define sites and component roles</h3>
+<p>Use the <strong>Site planner and customer-request builder</strong> and <strong>Component inventory</strong> sections to define the actual estate.</p>
+<p>Typical roles include:</p>
+<ul>
+<li>Load balancer</li>
+<li>Cluster manager</li>
+<li>Deployer</li>
+<li>Deployment server</li>
+<li>Monitoring console</li>
+<li>License manager</li>
+<li>Search head</li>
+<li>Indexer</li>
+<li>Heavy forwarder</li>
+<li>Universal forwarder</li>
+</ul>
+<p>These roles are used later by the app to generate stage paths, manager URIs, deployer targets, and placement decisions.</p>
+<h3>Step 3 — Add data sources</h3>
+<p>Use <strong>Data source inventory and onboarding inputs</strong> to capture onboarding intent.</p>
+<p>This is where the app decides:</p>
+<ul>
+<li>collection tier,</li>
+<li>parsing tier,</li>
+<li>search tier,</li>
+<li>likely TA split,</li>
+<li>ownership,</li>
+<li>validation steps,</li>
+<li>rollback notes.</li>
+</ul>
+<h3>Step 4 — Review architecture and placement</h3>
+<p>Use these sections before generating configs:</p>
+<ul>
+<li><strong>Topology summary and architecture warnings</strong></li>
+<li><strong>Visual HLD</strong></li>
+<li><strong>Visual LLD and connection matrix</strong></li>
+<li><strong>App and add-on placement advisor</strong></li>
+</ul>
+<p>These sections tell you whether the topology is consistent and whether an app belongs on the deployment server, deployer, manager-apps, peer-local, or local search tier.</p>
+<h3>Step 5 — Generate PS naming and conf outputs</h3>
+<p>Use <strong>PS config factory and placement map</strong> after profile, sites, and components are complete.</p>
+<p>This section gives you:</p>
+<ul>
+<li>customer-prefixed app names,</li>
+<li>bundle manifest,</li>
+<li>exact stage paths,</li>
+<li>generated config snippets,</li>
+<li>downloadable manifest,</li>
+<li>downloadable conf pack.</li>
+</ul>
+<h3>Step 6 — Execute with the TA matrix and playbook</h3>
+<p>After the config factory, continue with:</p>
+<ul>
+<li><strong>TA and app delivery matrix</strong></li>
+<li><strong>Professional Services deployment playbook</strong></li>
+<li><strong>Implementation runbook and onboarding playbooks</strong></li>
+<li><strong>Enterprise command builder</strong></li>
+</ul>
+<p>These sections convert the design into an engineer execution plan.</p>
+<h3>Step 7 — Validate and support</h3>
+<p>Use the final sections during rollout and handoff:</p>
+<ul>
+<li><strong>Validation packs</strong></li>
+<li><strong>Troubleshooting workbench</strong></li>
+<li><strong>Shift Handover Notes</strong></li>
+</ul>
+<hr />
+<h2>4. Customer short name and PS naming standard</h2>
+<p>The <strong>Customer short name</strong> field is now a primary input.</p>
+<p>The app uses it to replace generic PS starter names with customer-specific folder names.</p>
+<h3>Example naming conversions</h3>
+<table>
+<thead>
+<tr>
+  <th>Original name</th>
+  <th>Generated PS-style name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>TA-org_splunk</code></td>
+  <td><code>TA-&lt;customerShortName&gt;_splunk</code></td>
+</tr>
+<tr>
+  <td><code>org_all_forwarder_outputs</code></td>
+  <td><code>&lt;customerShortName&gt;_all_forwarder_outputs</code></td>
+</tr>
+<tr>
+  <td><code>org_all_deploymentclient</code></td>
+  <td><code>&lt;customerShortName&gt;_all_deploymentclient</code></td>
+</tr>
+<tr>
+  <td><code>org_cluster_indexer_base</code></td>
+  <td><code>&lt;customerShortName&gt;_cluster_indexer_base</code></td>
+</tr>
+<tr>
+  <td><code>org_multisite_manager_base</code></td>
+  <td><code>&lt;customerShortName&gt;_multisite_manager_base</code></td>
+</tr>
+<tr>
+  <td><code>org_site_n_indexer_base</code></td>
+  <td><code>&lt;customerShortName&gt;_&lt;site&gt;_indexer_base</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Naming rules used by the app</h3>
+<p>The generator sanitizes the short name so it remains safe for Splunk app-folder usage:</p>
+<ul>
+<li>spaces are removed or normalized,</li>
+<li>non-alphanumeric separators are converted to underscores,</li>
+<li>leading or trailing separators are removed,</li>
+<li>the result is kept predictable for packaging and deployment.</li>
+</ul>
+<h3>Recommended naming approach</h3>
+<p>Use a short, stable customer code such as:</p>
+<ul>
+<li><code>acme</code></li>
+<li><code>cba</code></li>
+<li><code>finops</code></li>
+<li><code>globex</code></li>
+</ul>
+<p>Avoid long descriptive names, spaces, and punctuation-heavy labels.</p>
+<hr />
+<h2>5. Section-by-section guide</h2>
+<h2>5.1 Daily Ops Dashboard</h2>
+<p>Use this section as the landing page for current operational status, quick actions, validation summaries, and shift-level context.</p>
+<h2>5.2 Engineer Quick Actions</h2>
+<p>Use this area for repetitive day-to-day actions such as reviewing generated outputs, checking commands, or jumping to key workflow sections.</p>
+<h2>5.3 Shift Handover Notes</h2>
+<p>Use this to capture engineering context between PS, platform, and support teams.</p>
+<p>Recommended content:</p>
+<ul>
+<li>what changed,</li>
+<li>what was deployed,</li>
+<li>what still needs approval,</li>
+<li>validation status,</li>
+<li>open risks,</li>
+<li>rollback cues.</li>
+</ul>
+<h2>5.4 Change Validation Control</h2>
+<p>Use this section to track whether a change has passed design review, package review, rollout readiness, and operational validation.</p>
+<h2>5.5 Import, export, and presets</h2>
+<p>Use this section to load or save working state.</p>
+<p>Available actions include:</p>
+<ul>
+<li>import from JSON,</li>
+<li>apply TXT input,</li>
+<li>export working data,</li>
+<li>download components CSV,</li>
+<li>download data sources CSV,</li>
+<li>use presets such as clustered single site, clustered multi-site, and forwarder fleet.</li>
+</ul>
+<p>Use a preset only as a starting point. Always update it with real customer values.</p>
+<h2>5.6 Customer profile and platform settings</h2>
+<p>This section defines the global defaults used everywhere else in the app.</p>
+<p>Important fields include:</p>
+<ul>
+<li>SSH and Splunk admin credentials,</li>
+<li>package names,</li>
+<li>install paths,</li>
+<li>receiver and HEC ports,</li>
+<li>cluster labels,</li>
+<li>replication settings,</li>
+<li>TLS state,</li>
+<li>deployment polling interval,</li>
+<li>multisite controls,</li>
+<li>SHC controls.</li>
+</ul>
+<p>The values here directly affect generated stage paths and command examples.</p>
+<h2>5.7 Site planner and customer-request builder</h2>
+<p>Use this to define site names, regions, zones, purpose, and notes.</p>
+<p>This becomes important when:</p>
+<ul>
+<li>multisite is enabled,</li>
+<li>peers are site-aware,</li>
+<li>search heads span sites,</li>
+<li>indexer overlays are site-specific.</li>
+</ul>
+<h2>5.8 Component inventory</h2>
+<p>This is one of the most important sections in the app.</p>
+<p>The tool uses the component inventory to determine:</p>
+<ul>
+<li>deployment server target,</li>
+<li>license manager URI,</li>
+<li>cluster manager URI,</li>
+<li>deployer targets,</li>
+<li>indexer target list,</li>
+<li>site-aware examples,</li>
+<li>which generated configs can be concrete versus placeholder-only.</li>
+</ul>
+<p>Populate hostnames, public IPs, private IPs, site, zone, OS, target group, and notes accurately.</p>
+<h2>5.9 Data source inventory and onboarding inputs</h2>
+<p>Use this section to record each onboarding request.</p>
+<p>Typical inputs include:</p>
+<ul>
+<li>source name,</li>
+<li>category,</li>
+<li>method,</li>
+<li>source location,</li>
+<li>collection tier,</li>
+<li>target index,</li>
+<li>sourcetype,</li>
+<li>app name,</li>
+<li>estimated daily volume,</li>
+<li>retention,</li>
+<li>search profile,</li>
+<li>notes.</li>
+</ul>
+<p>This drives the placement advisor, TA matrix, implementation playbooks, and validation content.</p>
+<h2>5.10 Enterprise capacity planning and pre-build prerequisites</h2>
+<p>Use this section to estimate infrastructure before a build is frozen.</p>
+<p>Track values such as:</p>
+<ul>
+<li>ingest volume,</li>
+<li>growth,</li>
+<li>concurrency,</li>
+<li>storage assumptions,</li>
+<li>compression,</li>
+<li>burst factor,</li>
+<li>network headroom,</li>
+<li>compute sizing,</li>
+<li>smart store or hot/warm assumptions.</li>
+</ul>
+<h2>5.11 Topology summary and architecture warnings</h2>
+<p>Review this section before any config generation.</p>
+<p>It flags common design issues such as:</p>
+<ul>
+<li>clustering with too few peers,</li>
+<li>multisite without enough sites,</li>
+<li>missing site assignments,</li>
+<li>incorrect role combinations,</li>
+<li>search heads used as collectors,</li>
+<li>missing cluster manager or deployer dependencies.</li>
+</ul>
+<h2>5.12 Visual HLD</h2>
+<p>Use this as the presentation-friendly architecture view.</p>
+<p>The app provides zoom controls and SVG export so the HLD can be reused in workshops and handoff material.</p>
+<h2>5.13 Visual LLD and connection matrix</h2>
+<p>Use this section for engineering-level connection review.</p>
+<p>This helps verify:</p>
+<ul>
+<li>management plane reachability,</li>
+<li>data plane flow,</li>
+<li>search tier to indexer relationships,</li>
+<li>DS, deployer, and manager responsibilities,</li>
+<li>site-aware distribution.</li>
+</ul>
+<h2>5.14 App and add-on placement advisor</h2>
+<p>This section tells the engineer where to put apps and TAs based on the collection method and target topology.</p>
+<p>It separates:</p>
+<ul>
+<li>collection-tier inputs,</li>
+<li>parsing-tier apps,</li>
+<li>search-tier knowledge,</li>
+<li>manager-managed peer bundles,</li>
+<li>SHC deployer bundles,</li>
+<li>local-only overlays.</li>
+</ul>
+<p>Use this section before creating or changing any TA split.</p>
+<h2>5.15 PS config factory and placement map</h2>
+<p>This is the main updated feature.</p>
+<p>Use this section to convert starter bundles into customer-ready PS bundles.</p>
+<p>It provides:</p>
+<ul>
+<li>PS naming conversion,</li>
+<li>component-aware generation,</li>
+<li>bundle safety notes,</li>
+<li>a bundle manifest,</li>
+<li>generated conf snippets,</li>
+<li>direct file downloads.</li>
+</ul>
+<p>See Section 6 for the detailed workflow.</p>
+<h2>5.16 TA and app delivery matrix</h2>
+<p>Use this section to split an add-on into the right deployment channels.</p>
+<p>Typical split:</p>
+<ul>
+<li>collection package,</li>
+<li>parsing package,</li>
+<li>search package.</li>
+</ul>
+<p>It also helps remove files that should not live on the wrong tier.</p>
+<h2>5.17 Professional Services deployment playbook</h2>
+<p>Use this section as the rollout sequence.</p>
+<p>It guides the engineer through:</p>
+<ul>
+<li>control-plane bring-up,</li>
+<li>peer enrollment,</li>
+<li>SHC setup,</li>
+<li>server-side app delivery,</li>
+<li>checkpoints,</li>
+<li>rollback sequencing.</li>
+</ul>
+<h2>5.18 Implementation runbook and onboarding playbooks</h2>
+<p>Use this section for the final implementation sequence per source type.</p>
+<p>This is the handoff-friendly operational content.</p>
+<h2>5.19 Enterprise command builder</h2>
+<p>Use this section to get command examples based on the current app state.</p>
+<p>Typical examples include:</p>
+<ul>
+<li>install and startup commands,</li>
+<li>deployment server reloads,</li>
+<li>cluster bundle validation,</li>
+<li>cluster bundle apply,</li>
+<li>SHC status and apply commands.</li>
+</ul>
+<h2>5.20 Validation packs</h2>
+<p>Use this for post-change validation.</p>
+<p>It ties the current topology and onboarding choices to verification steps.</p>
+<h2>5.21 Troubleshooting workbench</h2>
+<p>Use this section when a rollout fails or when behavior does not match design.</p>
+<p>The filters help narrow by:</p>
+<ul>
+<li>method,</li>
+<li>issue group,</li>
+<li>role,</li>
+<li>component or host,</li>
+<li>free-text search.</li>
+</ul>
+<hr />
+<h2>6. How to use the PS Config Factory</h2>
+<p>The <strong>PS config factory and placement map</strong> section should be used after the core environment details are in place.</p>
+<h3>6.1 Inputs required</h3>
+<p>For the best output, define at least:</p>
+<ul>
+<li>Customer short name</li>
+<li>Enterprise home</li>
+<li>Receiver port</li>
+<li>Deployment server</li>
+<li>Cluster manager</li>
+<li>License manager</li>
+<li>Deployer</li>
+<li>Search heads</li>
+<li>Indexers</li>
+<li>Sites and site names</li>
+<li>Cluster and SHC settings</li>
+</ul>
+<p>If a required component is missing, the app still generates output, but some values remain placeholders.</p>
+<h3>6.2 What the section shows</h3>
+<p>The section contains three practical parts.</p>
+<h3>A. PS naming convention panel</h3>
+<p>Shows how generic starter names are converted to customer-prefixed names.</p>
+<h3>B. Component inputs used by the generator</h3>
+<p>Shows which real component records are being used to build stage paths and target values.</p>
+<h3>C. Bundle safety rules</h3>
+<p>Highlights rules such as:</p>
+<ul>
+<li>manager-local apps stay local,</li>
+<li>peer-local overlays stay local to the peer,</li>
+<li>SHC apps go through the deployer,</li>
+<li>DS apps go through deployment-apps.</li>
+</ul>
+<h3>D. Renamed bundle manifest</h3>
+<p>The manifest maps:</p>
+<ul>
+<li>source pack,</li>
+<li>original folder,</li>
+<li>generated PS folder,</li>
+<li>placement target,</li>
+<li>stage path,</li>
+<li>delivery notes.</li>
+</ul>
+<h3>E. Generated config cards</h3>
+<p>Each config card includes:</p>
+<ul>
+<li>config title,</li>
+<li>target app name,</li>
+<li>target file,</li>
+<li>stage path,</li>
+<li>placement note,</li>
+<li>copyable conf content,</li>
+<li>a download button for the individual file.</li>
+</ul>
+<h3>F. Download buttons</h3>
+<p>The section currently supports:</p>
+<ul>
+<li><strong>Download PS manifest</strong></li>
+<li><strong>Download generated conf pack</strong></li>
+<li><strong>Download file</strong> for each generated config</li>
+</ul>
+<h3>6.3 Core generated config outputs</h3>
+<p>The current app generates guidance for common Splunk PS baselines, including:</p>
+<ul>
+<li>Deployment client baseline</li>
+<li>Fixed receiver outputs baseline</li>
+<li>Intermediate forwarder internal-index overlay</li>
+<li>Deployment server index-and-forward overlay</li>
+<li>License peer baseline</li>
+<li>Deployment client TLS trust overlay</li>
+<li>Deployment server secure-server baseline</li>
+<li>Deployment server broker authentication map</li>
+<li>Cluster-aware forwarder outputs</li>
+<li>Common clustered peer baseline</li>
+<li>Clustered peer index defaults</li>
+<li>Cluster manager local baseline</li>
+<li>Multisite manager overlay</li>
+<li>Search-head to indexer-cluster baseline</li>
+<li>Cluster-manager deployment client to manager-apps</li>
+</ul>
+<h3>6.4 How to use the generated content</h3>
+<p>Use the generated configs as engineer starting points, not as blind production drops.</p>
+<p>Before deployment, confirm:</p>
+<ul>
+<li>real hostnames,</li>
+<li>real secrets,</li>
+<li>TLS certificate locations,</li>
+<li>site names,</li>
+<li>retention and volume paths,</li>
+<li>correct serverclass targeting,</li>
+<li>correct SHC and cluster membership.</li>
+</ul>
+<hr />
+<h2>7. Placement standards used by the app</h2>
+<p>The updated app now follows a PS-style split between release channels.</p>
+<table>
+<thead>
+<tr>
+  <th>Content type</th>
+  <th>Standard placement used by the app</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Deployment-managed client apps</td>
+  <td><code>$SPLUNK_HOME/etc/deployment-apps/&lt;app&gt;</code> on the deployment server</td>
+  <td>Used for UFs and selected Enterprise clients</td>
+</tr>
+<tr>
+  <td>Search head cluster apps</td>
+  <td><code>$SPLUNK_HOME/etc/shcluster/apps/&lt;app&gt;</code> on the deployer</td>
+  <td>Use the deployer, not the deployment server</td>
+</tr>
+<tr>
+  <td>Common indexer-cluster peer bundles</td>
+  <td><code>$SPLUNK_HOME/etc/manager-apps/&lt;app&gt;</code> on the cluster manager</td>
+  <td>Validate and apply as a cluster bundle</td>
+</tr>
+<tr>
+  <td>Manager-local apps</td>
+  <td><code>$SPLUNK_HOME/etc/apps/&lt;app&gt;</code> on the cluster manager</td>
+  <td>Do not place manager-local content in manager-apps</td>
+</tr>
+<tr>
+  <td>Peer-local overlays</td>
+  <td><code>$SPLUNK_HOME/etc/apps/&lt;app&gt;</code> on the peer</td>
+  <td>Site-local overlays should remain local</td>
+</tr>
+<tr>
+  <td>Standalone or local search-tier apps</td>
+  <td><code>$SPLUNK_HOME/etc/apps/&lt;app&gt;</code> on the search tier</td>
+  <td>Use when SHC is not enabled</td>
+</tr>
+</tbody>
+</table>
+<h3>Practical rule</h3>
+<p>Treat the following as separate release channels:</p>
+<ol>
+<li>Deployment server</li>
+<li>Cluster manager</li>
+<li>SHC deployer</li>
+<li>Local-only app placement</li>
+</ol>
+<p>Do not mix these channels just because a folder name looks similar.</p>
+<hr />
+<h2>8. TA and app packaging guidance</h2>
+<p>The app assumes a PS-style split of add-ons when needed.</p>
+<h3>Collection package</h3>
+<p>Typical contents:</p>
+<ul>
+<li><code>inputs.conf</code></li>
+<li><code>outputs.conf</code></li>
+<li><code>deploymentclient.conf</code></li>
+<li>collector-side scripts or modular input settings</li>
+</ul>
+<h3>Parsing package</h3>
+<p>Typical contents:</p>
+<ul>
+<li><code>props.conf</code></li>
+<li><code>transforms.conf</code></li>
+<li><code>indexes.conf</code></li>
+<li>tier-specific parsing rules</li>
+</ul>
+<h3>Search package</h3>
+<p>Typical contents:</p>
+<ul>
+<li>search-time <code>props.conf</code></li>
+<li>search-time <code>transforms.conf</code></li>
+<li>tags</li>
+<li>eventtypes</li>
+<li>macros</li>
+<li>lookups</li>
+<li>saved searches</li>
+<li>data models</li>
+<li>dashboards</li>
+</ul>
+<h3>Important sanitation rule</h3>
+<p>Do not keep collection files on the search tier unless that tier is intentionally collecting data.</p>
+<hr />
+<h2>9. Engineer operating procedure</h2>
+<p>For each customer implementation, use this working pattern:</p>
+<ol>
+<li>Load or define the customer profile.</li>
+<li>Set the customer short name.</li>
+<li>Define sites.</li>
+<li>Enter all components.</li>
+<li>Enter data sources.</li>
+<li>Review topology warnings.</li>
+<li>Review HLD and LLD.</li>
+<li>Review app and TA placement.</li>
+<li>Open PS Config Factory.</li>
+<li>Download the manifest.</li>
+<li>Download the generated conf pack.</li>
+<li>Review the TA delivery matrix.</li>
+<li>Execute the deployment playbook.</li>
+<li>Run validation packs.</li>
+<li>Capture handover notes.</li>
+</ol>
+<p>This ensures the naming, placement, and rollout sequence remain aligned.</p>
+<hr />
+<h2>10. Common mistakes to avoid</h2>
+<p>Avoid these common engineering mistakes:</p>
+<ul>
+<li>Leaving <code>org_</code> names unchanged after moving to customer delivery.</li>
+<li>Using the deployment server for SHC member app deployment.</li>
+<li>Putting cluster-manager local settings in <code>manager-apps</code>.</li>
+<li>Pushing peer-local site overlays as shared cluster bundles.</li>
+<li>Keeping search-only knowledge on the parsing or collection tier without a reason.</li>
+<li>Forgetting to update hostnames, secrets, CA paths, and storage paths.</li>
+<li>Treating generated files as final production-ready content without environment review.</li>
+<li>Applying TA content to every tier instead of splitting collection, parsing, and search responsibilities.</li>
+</ul>
+<hr />
+<h2>11. Recommended handoff output from the app</h2>
+<p>For a clean PS delivery, export or capture at least the following:</p>
+<ul>
+<li>customer profile snapshot,</li>
+<li>components CSV,</li>
+<li>data sources CSV,</li>
+<li>HLD SVG,</li>
+<li>bundle manifest,</li>
+<li>generated conf pack,</li>
+<li>TA and app delivery decisions,</li>
+<li>deployment playbook steps,</li>
+<li>validation status,</li>
+<li>troubleshooting notes,</li>
+<li>shift handover summary.</li>
+</ul>
+<hr />
+<h2>12. Suggested ownership model</h2>
+<table>
+<thead>
+<tr>
+  <th>Area</th>
+  <th>Primary owner</th>
+  <th>Secondary owner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Customer profile and topology</td>
+  <td>Splunk PS / platform architect</td>
+  <td>customer platform lead</td>
+</tr>
+<tr>
+  <td>Component inventory</td>
+  <td>infrastructure team</td>
+  <td>Splunk PS</td>
+</tr>
+<tr>
+  <td>Data source onboarding</td>
+  <td>onboarding engineer</td>
+  <td>content owner</td>
+</tr>
+<tr>
+  <td>TA split and placement</td>
+  <td>Splunk engineer</td>
+  <td>search owner</td>
+</tr>
+<tr>
+  <td>DS app delivery</td>
+  <td>platform operations</td>
+  <td>Splunk engineer</td>
+</tr>
+<tr>
+  <td>Cluster manager bundle delivery</td>
+  <td>platform operations</td>
+  <td>Splunk engineer</td>
+</tr>
+<tr>
+  <td>SHC deployer bundle delivery</td>
+  <td>search platform team</td>
+  <td>Splunk engineer</td>
+</tr>
+<tr>
+  <td>Validation and handoff</td>
+  <td>platform operations</td>
+  <td>support team</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>13. Quick reference</h2>
+<h3>Best place to start</h3>
+<p>Start with <strong>Customer profile and platform settings</strong>.</p>
+<h3>Best place to decide app location</h3>
+<p>Use <strong>App and add-on placement advisor</strong>.</p>
+<h3>Best place to generate customer-ready config output</h3>
+<p>Use <strong>PS config factory and placement map</strong>.</p>
+<h3>Best place to turn the design into actions</h3>
+<p>Use <strong>Professional Services deployment playbook</strong> and <strong>Enterprise command builder</strong>.</p>
+<h3>Best place to validate and hand off</h3>
+<p>Use <strong>Validation packs</strong>, <strong>Troubleshooting workbench</strong>, and <strong>Shift Handover Notes</strong>.</p>
+<hr />
+<h2>14. Version note</h2>
+<p>This guide is aligned to the updated application file that includes the PS Config Factory and customer short-name naming convention. If the HTML file is changed again, this guide should be revised at the same time so the workflow, labels, and placement rules remain consistent.</p>
+
+    </div>
+    <div class="footer">Built for Splunk PS-style deployment, validation, and troubleshooting workflows. The earlier static page stays available, and live project context appears when the active environment is available.</div>
+  </div>
+</body>
+</html>

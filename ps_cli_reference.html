@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Splunk PS Ops Studio - PS CLI</title>
+  <link rel="stylesheet" href="support.css" />
+  <script defer src="support.js"></script>
+</head>
+<body data-page="cli">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="kicker">PS CLI</div>
+        <h1>Splunk PS Ops Studio - PS CLI</h1>
+        <p>Stable CLI reference page with live command context layered on top. It keeps the earlier static command guide and adds environment-specific hostnames, paths, and role-aware command examples when the active project state is available.</p>
+        <div class="badges"><span class="badge accent">Role-aware CLI</span><span class="badge good">Live hostnames</span><span class="badge accent">Paths</span><span class="badge warn">Validation</span><span class="badge good">Static fallback</span></div>
+      </div>
+      <div class="nav">
+        <a class="nav-button" href="index.html#support">Studio</a>
+        <a class="nav-button" href="help_user_guide.html">User Guide</a>
+        <a class="nav-button" href="engineer_sop.html">Engineer SOP</a>
+        <a class="nav-button" href="ps_cli_reference.html">PS CLI</a>
+      </div>
+    </div>
+    <div class="hero">
+      <div id="stateStatus"></div>
+      <div id="summaryGrid" class="metrics-grid"></div>
+      <div class="callout">This page keeps the original CLI reference. When opened from the studio, it also adds live command blocks generated from the active imported environment so you can copy the right host and path context quickly.</div>
+    </div>
+    <div id="liveContext"></div>
+    <div class="card content">
+      <div class="callout warn"><strong>Use with the studio:</strong> the dynamic <em>PS Config Factory CLI and rollout map</em> inside <code>index.html</code> already fills in the paths and role context from your topology. This page is the generic shell cookbook.</div><h2>1. Token legend</h2>
+<p>Replace these placeholders before running commands:</p>
+<ul>
+<li><code>&lt;app&gt;</code> = customer-prefixed app name from the PS Config Factory</li>
+<li><code>&lt;file&gt;</code> = generated conf file downloaded from the studio</li>
+<li><code>&lt;cm_fqdn&gt;</code> = cluster manager management address</li>
+<li><code>&lt;sh1_fqdn&gt;</code> = one SHC member management address</li>
+<li><code>&lt;splunk_home&gt;</code> = usually <code>/opt/splunk</code></li>
+<li><code>&lt;splunkforwarder_home&gt;</code> = usually <code>/opt/splunkforwarder</code></li>
+</ul>
+<h2>2. Placement map CLI quick start</h2>
+<h3>Deployment Server path</h3>
+<pre><code class="language-bash">mkdir -p &lt;splunk_home&gt;/etc/deployment-apps/&lt;app&gt;/local
+cp &lt;file&gt; &lt;splunk_home&gt;/etc/deployment-apps/&lt;app&gt;/local/
+&lt;splunk_home&gt;/bin/splunk reload deploy-server
+&lt;splunk_home&gt;/bin/splunk list deploy-clients
+</code></pre>
+<h3>Cluster Manager path</h3>
+<pre><code class="language-bash">mkdir -p &lt;splunk_home&gt;/etc/manager-apps/&lt;app&gt;/local
+cp &lt;file&gt; &lt;splunk_home&gt;/etc/manager-apps/&lt;app&gt;/local/
+&lt;splunk_home&gt;/bin/splunk validate cluster-bundle --check-restart
+&lt;splunk_home&gt;/bin/splunk apply cluster-bundle --answer-yes
+&lt;splunk_home&gt;/bin/splunk show cluster-bundle-status
+</code></pre>
+<h3>SHC deployer path</h3>
+<pre><code class="language-bash">mkdir -p &lt;splunk_home&gt;/etc/shcluster/apps/&lt;app&gt;/local
+cp &lt;file&gt; &lt;splunk_home&gt;/etc/shcluster/apps/&lt;app&gt;/local/
+&lt;splunk_home&gt;/bin/splunk show shcluster-status --verbose -auth &lt;admin&gt;:&lt;password&gt;
+&lt;splunk_home&gt;/bin/splunk apply shcluster-bundle -target https://&lt;sh1_fqdn&gt;:8089 -auth &lt;admin&gt;:&lt;password&gt;
+</code></pre>
+<h3>Local app path</h3>
+<pre><code class="language-bash">mkdir -p &lt;splunk_home&gt;/etc/apps/&lt;app&gt;/local
+cp &lt;file&gt; &lt;splunk_home&gt;/etc/apps/&lt;app&gt;/local/
+&lt;splunk_home&gt;/bin/splunk btool &lt;confname&gt; list --debug
+&lt;splunk_home&gt;/bin/splunk restart
+</code></pre>
+<h2>3. Deployment client and forwarding baselines</h2>
+<h3>Set deploy-poll on an Enterprise node</h3>
+<pre><code class="language-bash">&lt;splunk_home&gt;/bin/splunk set deploy-poll &lt;deployment_server_fqdn&gt;:8089 -auth &lt;admin&gt;:&lt;password&gt;
+&lt;splunk_home&gt;/bin/splunk restart
+</code></pre>
+<h3>Set deploy-poll on a Universal Forwarder</h3>
+<pre><code class="language-bash">&lt;splunkforwarder_home&gt;/bin/splunk set deploy-poll &lt;deployment_server_fqdn&gt;:8089 -auth &lt;admin&gt;:&lt;password&gt;
+&lt;splunkforwarder_home&gt;/bin/splunk restart
+</code></pre>
+<h3>Validate outputs, inputs, and deploymentclient settings</h3>
+<pre><code class="language-bash">&lt;target_home&gt;/bin/splunk btool outputs list --debug
+&lt;target_home&gt;/bin/splunk btool inputs list --debug
+&lt;target_home&gt;/bin/splunk btool deploymentclient list --debug
+</code></pre>
+<h2>4. Indexer-cluster and indexer-discovery references</h2>
+<h3>Peer registration example</h3>
+<pre><code class="language-bash">&lt;splunk_home&gt;/bin/splunk edit cluster-config -mode peer   -manager_uri https://&lt;cm_fqdn&gt;:8089   -replication_port 9887   -secret &lt;idxc_secret&gt;
+</code></pre>
+<h3>Forwarder indexer-discovery example</h3>
+<pre><code class="language-ini">[tcpout]
+defaultGroup = default-autolb-group
+
+[tcpout:default-autolb-group]
+indexerDiscovery = idxc1
+useACK = true
+
+[indexer_discovery:idxc1]
+manager_uri = https://&lt;cm_fqdn&gt;:8089
+pass4SymmKey = &lt;discovery_secret&gt;
+</code></pre>
+<h3>Peer-side validation</h3>
+<pre><code class="language-bash">&lt;splunk_home&gt;/bin/splunk show cluster-status --verbose
+&lt;splunk_home&gt;/bin/splunk btool server list --debug
+&lt;splunk_home&gt;/bin/splunk btool indexes list --debug
+</code></pre>
+<h2>5. Search head cluster references</h2>
+<h3>Validate member state</h3>
+<pre><code class="language-bash">&lt;splunk_home&gt;/bin/splunk show shcluster-status --verbose
+&lt;splunk_home&gt;/bin/splunk btool server list --debug
+&lt;splunk_home&gt;/bin/splunk btool distsearch list --debug
+</code></pre>
+<h3>Push search-tier package from the deployer</h3>
+<pre><code class="language-bash">&lt;splunk_home&gt;/bin/splunk apply shcluster-bundle   -target https://&lt;sh1_fqdn&gt;:8089   -auth &lt;admin&gt;:&lt;password&gt;
+</code></pre>
+<h2>6. Local-app special cases</h2>
+<h3>Manager-local or multisite overlay</h3>
+<pre><code class="language-bash">mkdir -p &lt;splunk_home&gt;/etc/apps/&lt;app&gt;/local
+cp &lt;file&gt; &lt;splunk_home&gt;/etc/apps/&lt;app&gt;/local/
+&lt;splunk_home&gt;/bin/splunk btool server list --debug
+&lt;splunk_home&gt;/bin/splunk restart
+</code></pre>
+<h3>License-peer settings on Enterprise nodes</h3>
+<pre><code class="language-bash">mkdir -p &lt;splunk_home&gt;/etc/apps/&lt;app&gt;/local
+cp &lt;file&gt; &lt;splunk_home&gt;/etc/apps/&lt;app&gt;/local/
+&lt;splunk_home&gt;/bin/splunk btool server list --debug
+&lt;splunk_home&gt;/bin/splunk restart
+</code></pre>
+<h3>Peer-local site overlay</h3>
+<pre><code class="language-bash">mkdir -p &lt;splunk_home&gt;/etc/apps/&lt;site_overlay_app&gt;/local
+cp &lt;file&gt; &lt;splunk_home&gt;/etc/apps/&lt;site_overlay_app&gt;/local/
+&lt;splunk_home&gt;/bin/splunk btool server list --debug
+&lt;splunk_home&gt;/bin/splunk restart
+</code></pre>
+<h2>7. Troubleshooting CLI pack</h2>
+<h3>Generic health pack</h3>
+<pre><code class="language-bash">&lt;target_home&gt;/bin/splunk btool check
+&lt;target_home&gt;/bin/splunk diag --collect=etc,var/log/splunk
+</code></pre>
+<h3>Log triage</h3>
+<pre><code class="language-bash">tail -n 120 &lt;splunk_home&gt;/var/log/splunk/splunkd.log
+egrep 'ERROR|WARN' &lt;splunk_home&gt;/var/log/splunk/splunkd.log | tail -50
+</code></pre>
+<h3>Network and listener checks</h3>
+<pre><code class="language-bash">ss -lntp | egrep '8000|8088|8089|9997|9887|8181|8191'
+curl -k https://&lt;target_fqdn&gt;:8089/services/server/info -u &lt;admin&gt;:&lt;password&gt;
+</code></pre>
+<h3>Config precedence check</h3>
+<pre><code class="language-bash">&lt;target_home&gt;/bin/splunk btool server list --debug
+&lt;target_home&gt;/bin/splunk btool indexes list --debug
+&lt;target_home&gt;/bin/splunk btool props list --debug
+&lt;target_home&gt;/bin/splunk btool transforms list --debug
+</code></pre>
+<h2>8. Rollback references</h2>
+<h3>Deployment Server rollback</h3>
+<pre><code class="language-bash">rm -f &lt;splunk_home&gt;/etc/deployment-apps/&lt;app&gt;/local/&lt;conf_file&gt;
+&lt;splunk_home&gt;/bin/splunk reload deploy-server
+</code></pre>
+<h3>Cluster Manager rollback</h3>
+<pre><code class="language-bash">rm -f &lt;splunk_home&gt;/etc/manager-apps/&lt;app&gt;/local/&lt;conf_file&gt;
+&lt;splunk_home&gt;/bin/splunk validate cluster-bundle --check-restart
+&lt;splunk_home&gt;/bin/splunk apply cluster-bundle --answer-yes
+</code></pre>
+<h3>SHC deployer rollback</h3>
+<pre><code class="language-bash">rm -f &lt;splunk_home&gt;/etc/shcluster/apps/&lt;app&gt;/local/&lt;conf_file&gt;
+&lt;splunk_home&gt;/bin/splunk apply shcluster-bundle -target https://&lt;sh1_fqdn&gt;:8089 -auth &lt;admin&gt;:&lt;password&gt;
+</code></pre>
+<h3>Local app rollback</h3>
+<pre><code class="language-bash">rm -f &lt;splunk_home&gt;/etc/apps/&lt;app&gt;/local/&lt;conf_file&gt;
+&lt;target_home&gt;/bin/splunk restart
+</code></pre>
+<h2>9. Operator reminders</h2>
+<ul>
+<li>Copy the generated file from the PS Config Factory first, then stage it with the CLI.</li>
+<li>Validate on the real winning tier with <code>btool</code>.</li>
+<li>Use the same repository for rollback that you used for deployment.</li>
+<li>Record the exact commands and validation results in the handover note.</li>
+</ul>
+
+    </div>
+    <div class="footer">Built for Splunk PS-style deployment, validation, and troubleshooting workflows. The earlier static page stays available, and live project context appears when the active environment is available.</div>
+  </div>
+</body>
+</html>

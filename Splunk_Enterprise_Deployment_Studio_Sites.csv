@@ -1,0 +1,3 @@
+name,region,zone,purpose,notes
+site1,primary-dc,az1,primary,Main production site
+site2,secondary-dc,az2,dr,Secondary site for multisite resilience

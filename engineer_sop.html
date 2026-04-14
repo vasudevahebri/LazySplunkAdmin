@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Splunk PS Ops Studio - Engineer SOP</title>
+  <link rel="stylesheet" href="support.css" />
+  <script defer src="support.js"></script>
+</head>
+<body data-page="sop">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="kicker">Engineer SOP</div>
+        <h1>Splunk PS Ops Studio - Engineer SOP</h1>
+        <p>Stable SOP page with live execution context layered on top. It keeps the earlier static operating procedure and adds the active environment details when they are available from index.html.</p>
+        <div class="badges"><span class="badge accent">Pre-checks</span><span class="badge good">Execution order</span><span class="badge accent">Validation</span><span class="badge warn">Rollback</span><span class="badge good">Live state</span></div>
+      </div>
+      <div class="nav">
+        <a class="nav-button" href="index.html#support">Studio</a>
+        <a class="nav-button" href="help_user_guide.html">User Guide</a>
+        <a class="nav-button" href="engineer_sop.html">Engineer SOP</a>
+        <a class="nav-button" href="ps_cli_reference.html">PS CLI</a>
+      </div>
+    </div>
+    <div class="hero">
+      <div id="stateStatus"></div>
+      <div id="summaryGrid" class="metrics-grid"></div>
+      <div class="callout">Use the static SOP as the base workflow. When the live project state is available, this page also shows the current customer, control-plane hosts, rollout order, and validation focus generated from the active imported environment.</div>
+    </div>
+    <div id="liveContext"></div>
+    <div class="card content">
+      <h2>1. What this SOP is for</h2>
+<p>Use this SOP when the tool has already told you <strong>what</strong> the target app or file should be and you now need to execute the change like a Splunk PS engineer: safely, in the correct repository, with the correct bundle action, validation, and rollback discipline.</p>
+<h2>2. Golden decision table</h2>
+<table>
+<thead>
+<tr>
+  <th>Situation</th>
+  <th>Correct place</th>
+  <th>Correct control plane</th>
+  <th>Typical files</th>
+  <th>Do not do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>UF or HF client app</td>
+  <td><code>etc/deployment-apps/&lt;app&gt;</code></td>
+  <td>Deployment Server</td>
+  <td><code>inputs.conf</code>, <code>outputs.conf</code>, <code>deploymentclient.conf</code>, client trust files</td>
+  <td>Do not use this path for SHC member apps</td>
+</tr>
+<tr>
+  <td>Clustered peer bundle</td>
+  <td><code>etc/manager-apps/&lt;app&gt;</code></td>
+  <td>Cluster Manager</td>
+  <td><code>server.conf</code>, <code>indexes.conf</code>, peer-side parsing files</td>
+  <td>Do not leave shared peer settings as ad hoc local edits</td>
+</tr>
+<tr>
+  <td>SHC member app</td>
+  <td><code>etc/shcluster/apps/&lt;app&gt;</code></td>
+  <td>Deployer</td>
+  <td>search-time knowledge, lookups, dashboards, macros, search-tier configs</td>
+  <td>Do not push SHC apps with Deployment Server</td>
+</tr>
+<tr>
+  <td>Manager-local or peer-local app</td>
+  <td><code>etc/apps/&lt;app&gt;</code> on the target node</td>
+  <td>Local change on the right host</td>
+  <td>local-only overlays, manager local, peer site overlay</td>
+  <td>Do not place manager-local settings in <code>manager-apps</code></td>
+</tr>
+</tbody>
+</table>
+<h2>3. Pre-change SOP</h2>
+<h3>Step A — Freeze the target and owner</h3>
+<ol>
+<li>Confirm the exact business request.</li>
+<li>Confirm the exact target tier: deployment client, indexer cluster, SHC, or local app.</li>
+<li>Confirm the change owner and rollback owner.</li>
+<li>Capture the current expected state from the tool:<ul>
+<li>target app name,</li>
+<li>stage path,</li>
+<li>generated conf file,</li>
+<li>validation query or CLI,</li>
+<li>affected hosts.</li>
+</ul>
+</li>
+</ol>
+<h3>Step B — Confirm the control-plane safety rules</h3>
+<ul>
+<li>The Deployment Server must not be its own deployment client.</li>
+<li>SHC member content must be pushed from the deployer, not the Deployment Server.</li>
+<li>Shared peer changes must go through <code>manager-apps</code> and the cluster bundle method.</li>
+<li>Search-tier packages should not accidentally carry collection stanzas like <code>inputs.conf</code> unless the search tier truly collects local data.</li>
+<li>Peer-local site overlays stay local on the peer and are not part of a shared common-peer bundle.</li>
+</ul>
+<h3>Step C — Take a quick baseline</h3>
+<p>Use the relevant command builder or PS CLI section and capture:</p>
+<pre><code class="language-bash">splunk btool check
+splunk show cluster-status --verbose
+splunk show shcluster-status --verbose
+splunk list deploy-clients
+</code></pre>
+<p>Keep the before-state in the change record or handover notes.</p>
+<h2>4. Rollout SOP by change type</h2>
+<h3>A. Deployment Server rollout</h3>
+<ol>
+<li>Stage the app under <code>etc/deployment-apps/&lt;app&gt;</code>.</li>
+<li>Place the generated file into the correct <code>local/</code> path.</li>
+<li>Review targeting in <code>serverclass.conf</code> or the forwarder-management mapping.</li>
+<li>Reload the Deployment Server.</li>
+<li>Validate the effective config on one real client with <code>btool</code>.</li>
+<li>Confirm that the source still forwards and the client still phones home.</li>
+</ol>
+<h3>B. Cluster Manager rollout</h3>
+<ol>
+<li>Stage the app under <code>etc/manager-apps/&lt;app&gt;</code>.</li>
+<li>Place the generated file under the correct bundle app path.</li>
+<li>Run <code>validate cluster-bundle --check-restart</code>.</li>
+<li>Apply the cluster bundle.</li>
+<li>Confirm peer-side effective config on at least one indexer with <code>btool</code>.</li>
+<li>Confirm cluster health after the change.</li>
+</ol>
+<h3>C. SHC deployer rollout</h3>
+<ol>
+<li>Stage the app under <code>etc/shcluster/apps/&lt;app&gt;</code> on the deployer.</li>
+<li>Ensure the package is search-tier safe.</li>
+<li>Run SHC health check before the push.</li>
+<li>Apply the SHC bundle from the deployer.</li>
+<li>Validate effective config on one member.</li>
+<li>Re-check SHC health and app presence on members.</li>
+</ol>
+<h3>D. Local app rollout</h3>
+<ol>
+<li>Copy the file into <code>etc/apps/&lt;app&gt;/local</code> on the intended host or hosts.</li>
+<li>Run <code>btool</code> on the same host.</li>
+<li>Restart only the affected host or tier.</li>
+<li>Confirm the precise behavior that changed.</li>
+</ol>
+<h2>5. Post-change validation SOP</h2>
+<p>Validate in four layers:</p>
+<h3>Layer 1 — Control plane</h3>
+<ul>
+<li>Deployment clients visible and not stale.</li>
+<li>Cluster bundle status clean.</li>
+<li>SHC status clean.</li>
+<li>No new severe errors in <code>splunkd.log</code>.</li>
+</ul>
+<h3>Layer 2 — Effective config</h3>
+<ul>
+<li><code>btool</code> shows the expected setting on the correct tier.</li>
+<li>No unexpected override from another app.</li>
+<li>The app name and path match the PS naming convention.</li>
+</ul>
+<h3>Layer 3 — Data or service result</h3>
+<ul>
+<li>Data reaches the intended index.</li>
+<li>Search-tier knowledge behaves as expected.</li>
+<li>Listener, HEC, API, or scripted input still works.</li>
+<li>No regression on adjacent sources.</li>
+</ul>
+<h3>Layer 4 — Operational impact</h3>
+<ul>
+<li>Queues remain healthy.</li>
+<li>License usage is not spiking unexpectedly.</li>
+<li>Scheduler health is normal after the change.</li>
+<li>User-visible dashboards and alerts still function.</li>
+</ul>
+<h2>6. Rollback SOP</h2>
+<p>Rollback from the same path you used for deployment.</p>
+<ul>
+<li>If you changed <code>deployment-apps</code>, back out from <code>deployment-apps</code> and reload the Deployment Server.</li>
+<li>If you changed <code>manager-apps</code>, remove or revert the bundle content, validate again, and re-apply the cluster bundle.</li>
+<li>If you changed <code>shcluster/apps</code>, revert on the deployer and push the bundle again.</li>
+<li>If you changed a local app, restore the previous file on the local host and restart the local instance.</li>
+</ul>
+<p>Always re-run the same validation commands after rollback. A rollback that is not validated is incomplete.</p>
+<h2>7. Real-time troubleshooting SOP</h2>
+<h3>Symptom 1 — Config landed but behavior did not change</h3>
+<ol>
+<li>Run <code>btool</code> on the real winning tier.</li>
+<li>Check for a higher-precedence override.</li>
+<li>Confirm the app was pushed through the correct control plane.</li>
+<li>Compare with the last known good app version.</li>
+</ol>
+<h3>Symptom 2 — App reached the wrong tier</h3>
+<ol>
+<li>Check whether the package should have been DS, cluster manager, deployer, or local.</li>
+<li>Remove the app from the wrong repository.</li>
+<li>Re-stage it in the correct repository.</li>
+<li>Re-run the proper reload or bundle action.</li>
+</ol>
+<h3>Symptom 3 — Data stopped after a rollout</h3>
+<ol>
+<li>Check listener or forwarding health.</li>
+<li>Check outputs and deployment-client settings with <code>btool</code>.</li>
+<li>Check parsing tier <code>props.conf</code> and <code>transforms.conf</code> if the issue is index-time.</li>
+<li>Check indexer or collector logs for queue, TLS, or routing failures.</li>
+</ol>
+<h3>Symptom 4 — Cluster or SHC health changed after a push</h3>
+<ol>
+<li>Check bundle status.</li>
+<li>Check merged config on one healthy and one unhealthy node.</li>
+<li>Compare the pushed app content against the intended package scope.</li>
+<li>Back out the last bundle if the drift began with the latest push.</li>
+</ol>
+<h2>8. Handover checklist</h2>
+<ul>
+<li>Change summary in one sentence.</li>
+<li>App or file changed.</li>
+<li>Exact repository used.</li>
+<li>Exact hosts affected.</li>
+<li>Commands run.</li>
+<li>Validation result.</li>
+<li>Known watch items.</li>
+<li>Rollback state and owner.</li>
+</ul>
+<h2>9. No-go list</h2>
+<ul>
+<li>Do not use the Deployment Server for SHC member apps.</li>
+<li>Do not push manager-local settings in <code>manager-apps</code>.</li>
+<li>Do not keep search-only knowledge and collection stanzas in the same SHC package unless the use case is intentional.</li>
+<li>Do not assume file copy equals active config; always prove with <code>btool</code>.</li>
+<li>Do not close the change until post-change validation and handover are complete.</li>
+</ul>
+
+    </div>
+    <div class="footer">Built for Splunk PS-style deployment, validation, and troubleshooting workflows. The earlier static page stays available, and live project context appears when the active environment is available.</div>
+  </div>
+</body>
+</html>
